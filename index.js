@@ -24,8 +24,6 @@ app.use(passport.session());
 require('./routes/authRoutes')(app);
 require('./routes/billingRoutes')(app);
 
-//git denemeeeee
-
 if (process.env.NODE_ENV === 'production') {
     // Express will serve up production assets
     // like our main.jf file
