@@ -1,55 +1,32 @@
-const sendGrid = require('sendgrid');
-const helper = sendGrid.mail;
+const sgMail = require('@sendgrid/mail'); // separate Node package
+const helpers = require('@sendgrid/helpers'); // separate Node package
 const keys = require('../config/keys');
 
-class Mailer extends helper.Mail {
+class Mailer extends helpers.classes.Mail {
+    // Through the use of Static methods from the Mail helper Class, you create a sendgrid compliant instance that can be send easily
     constructor({ subject, recipients }, content) {
         super();
+        this.setFrom('no-reply@emaily.com'); // uses the EmailAddress.create method
+        this.setSubject(subject);
+        this.addHtmlContent(content); // same as addContent, but more specific for HTML
 
-        this.sgApi = sendGrid(keys.sendGridKey);
-        this.from_email = new helper.Email('no-reply@emaily.com');
-        this.subject = subject;
-        this.body = new helper.Content('text/html', content);
-        this.recipients = this.formatAddresses(recipients);
+        this.recipients = recipients.map(({ email }) =>
+            helpers.classes.EmailAddress.create(email)
+        );
 
-        this.addContent(this.body);
-        this.addClickTracking();
-        this.addRecipients();
-    }
-
-    formatAddresses(recipients) {
-        return recipients.map(({ email }) => {
-            return new helper.Email(email);
+        this.setTrackingSettings({
+            clickTracking: { enable: true, enableText: true },
         });
+
+        this.addTo(this.recipients); // This uses the personalization method in the background
     }
 
-    addClickTracking() {
-        const trackingSettings = new helper.TrackingSettings();
-        const clickTracking = new helper.ClickTracking(true, true);
-
-        trackingSettings.setClickTracking(clickTracking);
-        this.addTrackingSettings(trackingSettings);
-    }
-
-    addRecipients() {
-        const personalize = new helper.Personalization();
-        this.recipients.forEach(recipient => {
-            personalize.addTo(recipient);
-        });
-        this.addPersonalization(personalize);
-    }
-
+    // To separate our data from what we send out, we create another function
     async send() {
-        const request = this.sgApi.emptyRequest({
-            method: 'POST',
-            path: '/v3/mail/send',
-            body: this.toJSON()
-        });
+        sgMail.setApiKey(keys.sendGridKey);
 
-        const response = await this.sgApi.API(request);
-        return response;
+        return await sgMail.send(this); // attach the current instance to be send out with SendGrid
     }
 }
-
 
 module.exports = Mailer;
