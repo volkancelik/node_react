@@ -25,7 +25,8 @@ class Mailer extends helpers.classes.Mail {
     async send() {
         sgMail.setApiKey(keys.sendGridKey);
 
-        return await sgMail.send(this); // attach the current instance to be send out with SendGrid
+        const response = await sgMail.send(this); // attach the current instance to be send out with SendGrid
+        return response;
     }
 }
 
